@@ -1,0 +1,13 @@
+# Paths for the stage
+# log contains movements from .../vpc-sc to fast/stages/00-bootstrap}/main.tf this looks like a bug and is ignored
+fast/stages/00-bootstrap/
+fast/stages/00-bootstrap/==>
+
+# Modules only used by this stage
+modules/bigquery-dataset/
+modules/logging-bucket/
+modules/pubsub/
+
+# Files required for Licensing
+LICENSE
+NOTICE
