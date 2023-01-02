@@ -1,11 +1,30 @@
+<!---
+Copyright 2023 q.beyond AG
+Copyright 2022 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # Organization bootstrap
+
+This stage is part of the [google landing zone modules](https://github.com/qbeyond/terraform-google-landing-zone). 
 
 The primary purpose of this stage is to enable critical organization-level functionalities that depend on broad administrative permissions, and prepare the prerequisites needed to enable automation in this and future stages.
 
 It is intentionally simple, to minimize usage of administrative-level permissions and enable simple auditing and troubleshooting, and only deals with three sets of resources:
 
 - project, service accounts, and GCS buckets for automation
-- projects, BQ datasets, and sinks for audit log and billing exports
+- projects, big query datasets, and sinks for audit log and billing exports
 - IAM bindings on the organization
 
 Use the following diagram as a simple high level reference for the following sections, which describe the stage and its possible customizations in detail.
@@ -18,7 +37,7 @@ Use the following diagram as a simple high level reference for the following sec
 
 As mentioned above, this stage only does the bare minimum required to bootstrap automation, and ensure that base audit and billing exports are in place from the start to provide some measure of accountability, even before the security configurations are applied in a later stage.
 
-It also sets up organization-level IAM bindings so the Organization Administrator role is only used here, trading off some design freedom for ease of auditing and troubleshooting, and reducing the risk of costly security mistakes down the line. The only exception to this rule is for the [Resource Management stage](../01-resman) service account, described below.
+It also sets up organization-level IAM bindings so the Organization Administrator role is only used here, trading off some design freedom for ease of auditing and troubleshooting, and reducing the risk of costly security mistakes down the line. The only exception to this rule is for the [Resource Management stage](https://github.com/qbeyond/terraform-google-landingzone-p) service account, described below.
 
 ### User groups
 
