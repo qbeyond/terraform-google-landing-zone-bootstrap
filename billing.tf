@@ -53,7 +53,7 @@ module "billing-export-project" {
 }
 
 module "billing-export-dataset" {
-  source        = "../../../modules/bigquery-dataset"
+  source        = "./modules/bigquery-dataset"
   count         = local.billing_org ? 1 : 0
   project_id    = module.billing-export-project.0.project_id
   id            = "billing_export"

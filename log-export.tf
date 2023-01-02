@@ -46,7 +46,7 @@ module "log-export-project" {
 # one log export per type, with conditionals to skip those not needed
 
 module "log-export-dataset" {
-  source        = "../../../modules/bigquery-dataset"
+  source        = "./modules/bigquery-dataset"
   count         = contains(local.log_types, "bigquery") ? 1 : 0
   project_id    = module.log-export-project.project_id
   id            = "audit_export"
@@ -66,7 +66,7 @@ module "log-export-gcs" {
 }
 
 module "log-export-logbucket" {
-  source      = "../../../modules/logging-bucket"
+  source      = "./modules/logging-bucket"
   for_each    = toset([for k, v in var.log_sinks : k if v.type == "logging"])
   parent_type = "project"
   parent      = module.log-export-project.project_id
@@ -75,7 +75,7 @@ module "log-export-logbucket" {
 }
 
 module "log-export-pubsub" {
-  source     = "../../../modules/pubsub"
+  source     = "./modules/pubsub"
   for_each   = toset([for k, v in var.log_sinks : k if v.type == "pubsub"])
   project_id = module.log-export-project.project_id
   name       = "audit-logs-${each.key}"
