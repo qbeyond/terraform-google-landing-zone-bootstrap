@@ -1,4 +1,5 @@
 /**
+ * Copyright 2023 q.beyond AG
  * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,8 +22,9 @@ locals {
 }
 
 module "log-export-project" {
-  source = "../../../modules/project"
-  name   = "audit-logs-0"
+  source  = "qbeyond/project/google"
+  version = "0.1.0"
+  name    = "audit-logs-0"
   parent = coalesce(
     var.project_parent_ids.logging, "organizations/${var.organization.id}"
   )
@@ -53,7 +55,8 @@ module "log-export-dataset" {
 }
 
 module "log-export-gcs" {
-  source        = "../../../modules/gcs"
+  source        = "qbeyond/gcs/google"
+  version       = "0.1.0"
   count         = contains(local.log_types, "storage") ? 1 : 0
   project_id    = module.log-export-project.project_id
   name          = "audit-logs-0"

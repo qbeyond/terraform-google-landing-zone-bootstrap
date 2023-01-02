@@ -1,4 +1,5 @@
 /**
+ * Copyright 2023 q.beyond AG
  * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -52,7 +53,8 @@ locals {
 # source repository
 
 module "automation-tf-cicd-repo" {
-  source = "../../../modules/source-repository"
+  source  = "qbeyond/source-repository/google"
+  version = "0.1.0"
   for_each = {
     for k, v in local.cicd_repositories : k => v if v.type == "sourcerepo"
   }
@@ -87,7 +89,8 @@ module "automation-tf-cicd-repo" {
 # SAs used by CI/CD workflows to impersonate automation SAs
 
 module "automation-tf-cicd-sa" {
-  source       = "../../../modules/iam-service-account"
+  source       = "qbeyond/service-account/google"
+  version      = "0.1.0"
   for_each     = local.cicd_repositories
   project_id   = module.automation-project.project_id
   name         = "${each.key}-1"
