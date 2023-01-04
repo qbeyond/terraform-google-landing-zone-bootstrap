@@ -577,3 +577,75 @@ No requirements.
 | [google_storage_bucket_object.tfvars_globals](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_object) | resource |
 | [google_storage_bucket_object.workflows](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_object)      | resource |
 <!-- END_TF_DOCS -->
+
+## Destruction
+
+If you want to destroy a previous FAST deployment in your organization, you need to destroy in reverse order. So to destroy this module, you need to destroy all subsequent stages before.
+
+**Warning: you should follow these steps carefully as we will modify our own permissions. Ensure you can grant yourself the Organization Admin role again. Otherwise, you will not be able to finish the destruction process and will, most likely, get locked out of your organization.**
+
+We manually remove several resources (GCS buckets and BQ datasets). Note that `terrafom destroy` will fail. This is expected; just continue with the rest of the steps.
+
+```powershell
+cd $FAST_PWD/00-bootstrap/
+
+# remove provider config to execute without SA impersonation
+rm 00-bootstrap-providers.tf
+
+#override project to use cloud identity api
+Set-Content -LiteralPath "00-bootstrap-providers-destroy.tf" -Value @(
+  'provider "google" {'
+  'billing_project = "<iacproject>"'
+  'user_project_override = true'
+  '}'
+)
+
+# migrate to local state
+terraform init -migrate-state
+
+# remove GCS buckets
+terraform state list | Select-String "google_storage_bucket\." | Foreach-Object {$_ = $_ -replace '"','\"'; & terraform state rm $_}
+
+#remove bigqueries
+terraform state list | Select-String "google_bigquery_dataset" | Foreach-Object {$_ = $_ -replace '"','\"'; & terraform state rm $_}
+
+terraform destroy
+```
+
+When the destroy fails, continue with the steps below. Again, make sure your user (the one you are using to execute this step) has the Organization Administrator role, as we will remove the permissions for the organization-admins group
+
+```powershell
+# Add the Organization Admin role to $BU_USER in the GCP Console
+# then execute the command below to grant yourself the permissions needed 
+# to finish the destruction
+$FAST_DESTROY_ROLES=@(
+  "roles/billing.admin",
+  "roles/logging.admin",
+  "roles/iam.organizationRoleAdmin",
+  "roles/resourcemanager.projectDeleter",
+  "roles/resourcemanager.folderAdmin",
+  "roles/owner"
+)
+
+# login to gcloud
+gcloud auth login
+
+$FAST_BU=gcloud config list --format 'value(core.account)'
+
+# find your org id
+gcloud organizations list --filter display_name:[part of your domain]
+
+# set your org id
+$FAST_ORG_ID="<orgid>"
+
+foreach ($role in $FAST_DESTROY_ROLES) {
+gcloud organizations add-iam-policy-binding $FAST_ORG_ID --member user:$FAST_BU --role $role
+}
+
+terraform destroy
+rm -i terraform.tfstate*
+```
+
+In case you want to deploy FAST stages again, the make sure to:
+* Modify the [prefix](00-bootstrap/variables.tf) variable to allow the deployment of resources that need unique names (eg, projects).
+* Modify the [custom_roles](00-bootstrap/variables.tf) variable to allow recently deleted custom roles to be created again.
