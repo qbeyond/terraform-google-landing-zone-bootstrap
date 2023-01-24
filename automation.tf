@@ -89,7 +89,7 @@ module "automation-project" {
 # output files bucket
 
 module "automation-tf-output-gcs" {
-  source        = "qbeyond/gcs/google"
+  source        = "qbeyond/storage-bucket/google"
   version       = "0.1.0"
   project_id    = module.automation-project.project_id
   name          = "iac-core-outputs-0"
@@ -103,7 +103,7 @@ module "automation-tf-output-gcs" {
 # this stage's bucket and service account
 
 module "automation-tf-bootstrap-gcs" {
-  source        = "qbeyond/gcs/google"
+  source        = "qbeyond/storage-bucket/google"
   version       = "0.1.0"
   project_id    = module.automation-project.project_id
   name          = "iac-core-bootstrap-0"
@@ -135,7 +135,7 @@ module "automation-tf-bootstrap-sa" {
 # cicd stage's bucket and service account
 
 module "automation-tf-cicd-gcs" {
-  source        = "qbeyond/gcs/google"
+  source        = "qbeyond/storage-bucket/google"
   version       = "0.1.0"
   project_id    = module.automation-project.project_id
   name          = "iac-core-cicd-0"
@@ -170,7 +170,7 @@ module "automation-tf-cicd-provisioning-sa" {
 # resource hierarchy stage's bucket and service account
 
 module "automation-tf-resman-gcs" {
-  source        = "qbeyond/gcs/google"
+  source        = "qbeyond/storage-bucket/google"
   version       = "0.1.0"
   project_id    = module.automation-project.project_id
   name          = "iac-core-resman-0"

@@ -55,7 +55,7 @@ module "log-export-dataset" {
 }
 
 module "log-export-gcs" {
-  source        = "qbeyond/gcs/google"
+  source        = "qbeyond/storage-bucket/google"
   version       = "0.1.0"
   count         = contains(local.log_types, "storage") ? 1 : 0
   project_id    = module.log-export-project.project_id
