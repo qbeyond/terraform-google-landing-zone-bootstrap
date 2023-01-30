@@ -128,7 +128,7 @@ locals {
 }
 
 module "organization" {
-  source          = "qbeyond/organization/google"
+  source          = "qbeyond/organization-configuration/google"
   version         = "0.1.0"
   organization_id = "organizations/${var.organization.id}"
   # human (groups) IAM bindings

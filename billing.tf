@@ -64,7 +64,7 @@ module "billing-export-dataset" {
 # billing account in a different org
 
 module "billing-organization-ext" {
-  source          = "qbeyond/organization/google"
+  source          = "qbeyond/organization-configuration/google"
   version         = "0.1.0"
   count           = local.billing_org_ext ? 1 : 0
   organization_id = "organizations/${var.billing_account.organization_id}"
