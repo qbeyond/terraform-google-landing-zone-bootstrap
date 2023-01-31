@@ -10,7 +10,8 @@ module "bootstrap" {
     id          = data.google_organization.this.org_id
     customer_id = data.google_organization.this.directory_customer_id
   }
-  prefix      = "testpre"
+  custom_role_names = var.custom_role_names
+  prefix            = "testpre"
   billing_account = {
     id              = var.billing_account_id
     organization_id = var.billing_account_organization_id
