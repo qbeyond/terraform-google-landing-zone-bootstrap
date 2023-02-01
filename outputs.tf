@@ -15,7 +15,6 @@
  */
 
 locals {
-  _tpl_providers = "${path.module}/templates/providers.tf.tpl"
   # render CI/CD workflow templates
   cicd_workflows = {
     for k, v in local.cicd_repositories : k => templatefile(
