@@ -1,4 +1,5 @@
 /**
+ * Copyright 2023 q.beyond AG
  * Copyright 2022 Google LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,8 +22,9 @@ locals {
 }
 
 module "log-export-project" {
-  source = "../../../modules/project"
-  name   = "audit-logs-0"
+  source  = "qbeyond/project/google"
+  version = "0.1.0"
+  name    = "audit-logs-0"
   parent = coalesce(
     var.project_parent_ids.logging, "organizations/${var.organization.id}"
   )
@@ -44,7 +46,7 @@ module "log-export-project" {
 # one log export per type, with conditionals to skip those not needed
 
 module "log-export-dataset" {
-  source        = "../../../modules/bigquery-dataset"
+  source        = "./modules/bigquery-dataset"
   count         = contains(local.log_types, "bigquery") ? 1 : 0
   project_id    = module.log-export-project.project_id
   id            = "audit_export"
@@ -53,7 +55,8 @@ module "log-export-dataset" {
 }
 
 module "log-export-gcs" {
-  source        = "../../../modules/gcs"
+  source        = "qbeyond/storage-bucket/google"
+  version       = "0.1.0"
   count         = contains(local.log_types, "storage") ? 1 : 0
   project_id    = module.log-export-project.project_id
   name          = "audit-logs-0"
@@ -63,7 +66,7 @@ module "log-export-gcs" {
 }
 
 module "log-export-logbucket" {
-  source      = "../../../modules/logging-bucket"
+  source      = "./modules/logging-bucket"
   for_each    = toset([for k, v in var.log_sinks : k if v.type == "logging"])
   parent_type = "project"
   parent      = module.log-export-project.project_id
@@ -72,7 +75,7 @@ module "log-export-logbucket" {
 }
 
 module "log-export-pubsub" {
-  source     = "../../../modules/pubsub"
+  source     = "./modules/pubsub"
   for_each   = toset([for k, v in var.log_sinks : k if v.type == "pubsub"])
   project_id = module.log-export-project.project_id
   name       = "audit-logs-${each.key}"

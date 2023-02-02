@@ -15,7 +15,6 @@
  */
 
 locals {
-  _tpl_providers = "${path.module}/templates/providers.tf.tpl"
   # render CI/CD workflow templates
   cicd_workflows = {
     for k, v in local.cicd_repositories : k => templatefile(
@@ -38,21 +37,9 @@ locals {
     k => try(module.organization.custom_role_id[v], null)
   }
   providers = {
-    "00-bootstrap" = templatefile(local._tpl_providers, {
-      bucket = module.automation-tf-bootstrap-gcs.name
-      name   = "bootstrap"
-      sa     = module.automation-tf-bootstrap-sa.email
-    })
-    "00-cicd" = templatefile(local._tpl_providers, {
-      bucket = module.automation-tf-cicd-gcs.name
-      name   = "cicd"
-      sa     = module.automation-tf-cicd-provisioning-sa.email
-    })
-    "01-resman" = templatefile(local._tpl_providers, {
-      bucket = module.automation-tf-resman-gcs.name
-      name   = "resman"
-      sa     = module.automation-tf-resman-sa.email
-    })
+    "00-bootstrap" = module.bootstrap_template.content
+    "00-cicd"      = module.cicd_template.content
+    "01-resman"    = module.resman_template.content
   }
   tfvars = {
     automation = {
@@ -84,6 +71,27 @@ locals {
       principalset_tpl = local.identity_providers[k].principalset_tpl
     }
   }
+}
+
+module "bootstrap_template" {
+  source          = "qbeyond/landing-zone/google//modules/provider-template"
+  version         = "0.1.0"
+  bucket_name     = module.automation-tf-bootstrap-gcs.name
+  service_account = module.automation-tf-bootstrap-sa.email
+}
+
+module "cicd_template" {
+  source          = "qbeyond/landing-zone/google//modules/provider-template"
+  version         = "0.1.0"
+  bucket_name     = module.automation-tf-cicd-gcs.name
+  service_account = module.automation-tf-cicd-provisioning-sa.email
+}
+
+module "resman_template" {
+  source          = "qbeyond/landing-zone/google//modules/provider-template"
+  version         = "0.1.0"
+  bucket_name     = module.automation-tf-resman-gcs.name
+  service_account = module.automation-tf-resman-sa.email
 }
 
 output "automation" {

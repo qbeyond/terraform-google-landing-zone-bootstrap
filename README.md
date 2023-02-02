@@ -1,11 +1,30 @@
+<!---
+Copyright 2023 q.beyond AG
+Copyright 2022 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
 # Organization bootstrap
+
+This stage is part of the [google landing zone modules](https://github.com/qbeyond/terraform-google-landing-zone). 
 
 The primary purpose of this stage is to enable critical organization-level functionalities that depend on broad administrative permissions, and prepare the prerequisites needed to enable automation in this and future stages.
 
 It is intentionally simple, to minimize usage of administrative-level permissions and enable simple auditing and troubleshooting, and only deals with three sets of resources:
 
 - project, service accounts, and GCS buckets for automation
-- projects, BQ datasets, and sinks for audit log and billing exports
+- projects, big query datasets, and sinks for audit log and billing exports
 - IAM bindings on the organization
 
 Use the following diagram as a simple high level reference for the following sections, which describe the stage and its possible customizations in detail.
@@ -18,7 +37,7 @@ Use the following diagram as a simple high level reference for the following sec
 
 As mentioned above, this stage only does the bare minimum required to bootstrap automation, and ensure that base audit and billing exports are in place from the start to provide some measure of accountability, even before the security configurations are applied in a later stage.
 
-It also sets up organization-level IAM bindings so the Organization Administrator role is only used here, trading off some design freedom for ease of auditing and troubleshooting, and reducing the risk of costly security mistakes down the line. The only exception to this rule is for the [Resource Management stage](../01-resman) service account, described below.
+It also sets up organization-level IAM bindings so the Organization Administrator role is only used here, trading off some design freedom for ease of auditing and troubleshooting, and reducing the risk of costly security mistakes down the line. The only exception to this rule is for the [Resource Management stage](https://github.com/qbeyond/terraform-google-landingzone-p) service account, described below.
 
 ### User groups
 
@@ -441,58 +460,195 @@ The remaining configuration is manual, as it regards the repositories themselves
     - for Gitlab, rename it to `.gitlab-ci.yml` and place it in the repository root
     - for Source Repositories, place it in `.cloudbuild/workflow.yaml`
 
-<!-- TFDOC OPTS files:1 show_extra:1 -->
-<!-- BEGIN TFDOC -->
+<!-- BEGIN_TF_DOCS -->
+## Requirements
 
-## Files
+No requirements.
 
-| name | description | modules | resources |
-|---|---|---|---|
-| [automation.tf](./automation.tf) | Automation project and resources. | <code>gcs</code> · <code>iam-service-account</code> · <code>project</code> |  |
-| [billing.tf](./billing.tf) | Billing export project and dataset. | <code>bigquery-dataset</code> · <code>organization</code> · <code>project</code> | <code>google_billing_account_iam_member</code> · <code>google_organization_iam_binding</code> |
-| [cicd.tf](./cicd.tf) | Workload Identity Federation configurations for CI/CD. | <code>iam-service-account</code> · <code>source-repository</code> |  |
-| [identity-providers.tf](./identity-providers.tf) | Workload Identity Federation provider definitions. |  | <code>google_iam_workload_identity_pool</code> · <code>google_iam_workload_identity_pool_provider</code> |
-| [log-export.tf](./log-export.tf) | Audit log project and sink. | <code>bigquery-dataset</code> · <code>gcs</code> · <code>logging-bucket</code> · <code>project</code> · <code>pubsub</code> |  |
-| [main.tf](./main.tf) | Module-level locals and resources. |  |  |
-| [organization.tf](./organization.tf) | Organization-level IAM. | <code>organization</code> | <code>google_organization_iam_binding</code> |
-| [outputs-files.tf](./outputs-files.tf) | Output files persistence to local filesystem. |  | <code>local_file</code> |
-| [outputs-gcs.tf](./outputs-gcs.tf) | Output files persistence to automation GCS bucket. |  | <code>google_storage_bucket_object</code> |
-| [outputs.tf](./outputs.tf) | Module outputs. |  |  |
-| [variables.tf](./variables.tf) | Module variables. |  |  |
+## Inputs
 
-## Variables
-
-| name | description | type | required | default | producer |
-|---|---|:---:|:---:|:---:|:---:|
-| [billing_account](variables.tf#L17) | Billing account id and organization id ('nnnnnnnn' or null). | <code title="object&#40;&#123;&#10;  id              &#61; string&#10;  organization_id &#61; number&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> | ✓ |  |  |
-| [organization](variables.tf#L202) | Organization details. | <code title="object&#40;&#123;&#10;  domain      &#61; string&#10;  id          &#61; number&#10;  customer_id &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> | ✓ |  |  |
-| [prefix](variables.tf#L217) | Prefix used for resources that need unique names. Use 9 characters or less. | <code>string</code> | ✓ |  |  |
-| [bootstrap_user](variables.tf#L25) | Email of the nominal user running this stage for the first time. | <code>string</code> |  | <code>null</code> |  |
-| [cicd_repositories](variables.tf#L31) | CI/CD repository configuration. Identity providers reference keys in the `federated_identity_providers` variable. Set to null to disable, or set individual repositories to null if not needed. | <code title="object&#40;&#123;&#10;  bootstrap &#61; object&#40;&#123;&#10;    branch            &#61; string&#10;    identity_provider &#61; string&#10;    name              &#61; string&#10;    type              &#61; string&#10;  &#125;&#41;&#10;  cicd &#61; object&#40;&#123;&#10;    branch            &#61; string&#10;    identity_provider &#61; string&#10;    name              &#61; string&#10;    type              &#61; string&#10;  &#125;&#41;&#10;  resman &#61; object&#40;&#123;&#10;    branch            &#61; string&#10;    identity_provider &#61; string&#10;    name              &#61; string&#10;    type              &#61; string&#10;  &#125;&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code>null</code> |  |
-| [custom_role_names](variables.tf#L83) | Names of custom roles defined at the org level. | <code title="object&#40;&#123;&#10;  organization_iam_admin        &#61; string&#10;  service_project_network_admin &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code title="&#123;&#10;  organization_iam_admin        &#61; &#34;organizationIamAdmin&#34;&#10;  service_project_network_admin &#61; &#34;serviceProjectNetworkAdmin&#34;&#10;&#125;">&#123;&#8230;&#125;</code> |  |
-| [fast_features](variables.tf#L95) | Selective control for top-level FAST features. | <code title="object&#40;&#123;&#10;  data_platform   &#61; bool&#10;  gke             &#61; bool&#10;  project_factory &#61; bool&#10;  sandbox         &#61; bool&#10;  teams           &#61; bool&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code title="&#123;&#10;  data_platform   &#61; true&#10;  gke             &#61; true&#10;  project_factory &#61; true&#10;  sandbox         &#61; true&#10;  teams           &#61; true&#10;&#125;">&#123;&#8230;&#125;</code> |  |
-| [federated_identity_providers](variables.tf#L114) | Workload Identity Federation pools. The `cicd_repositories` variable references keys here. | <code title="map&#40;object&#40;&#123;&#10;  attribute_condition &#61; string&#10;  issuer              &#61; string&#10;  custom_settings &#61; object&#40;&#123;&#10;    issuer_uri        &#61; string&#10;    allowed_audiences &#61; list&#40;string&#41;&#10;  &#125;&#41;&#10;&#125;&#41;&#41;">map&#40;object&#40;&#123;&#8230;&#125;&#41;&#41;</code> |  | <code>&#123;&#125;</code> |  |
-| [groups](variables.tf#L128) | Group names to grant organization-level permissions. | <code>map&#40;string&#41;</code> |  | <code title="&#123;&#10;  gcp-billing-admins      &#61; &#34;gcp-billing-admins&#34;,&#10;  gcp-devops              &#61; &#34;gcp-devops&#34;,&#10;  gcp-network-admins      &#61; &#34;gcp-network-admins&#34;&#10;  gcp-organization-admins &#61; &#34;gcp-organization-admins&#34;&#10;  gcp-security-admins     &#61; &#34;gcp-security-admins&#34;&#10;  gcp-support &#61; &#34;gcp-devops&#34;&#10;&#125;">&#123;&#8230;&#125;</code> |  |
-| [iam](variables.tf#L146) | Organization-level custom IAM settings in role => [principal] format. | <code>map&#40;list&#40;string&#41;&#41;</code> |  | <code>&#123;&#125;</code> |  |
-| [iam_additive](variables.tf#L152) | Organization-level custom IAM settings in role => [principal] format for non-authoritative bindings. | <code>map&#40;list&#40;string&#41;&#41;</code> |  | <code>&#123;&#125;</code> |  |
-| [locations](variables.tf#L158) | Optional locations for GCS, BigQuery, and logging buckets created here. | <code title="object&#40;&#123;&#10;  bq      &#61; string&#10;  gcs     &#61; string&#10;  logging &#61; string&#10;  pubsub  &#61; list&#40;string&#41;&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code title="&#123;&#10;  bq      &#61; &#34;EU&#34;&#10;  gcs     &#61; &#34;EU&#34;&#10;  logging &#61; &#34;global&#34;&#10;  pubsub  &#61; &#91;&#93;&#10;&#125;">&#123;&#8230;&#125;</code> |  |
-| [log_sinks](variables.tf#L177) | Org-level log sinks, in name => {type, filter} format. | <code title="map&#40;object&#40;&#123;&#10;  filter &#61; string&#10;  type   &#61; string&#10;&#125;&#41;&#41;">map&#40;object&#40;&#123;&#8230;&#125;&#41;&#41;</code> |  | <code title="&#123;&#10;  audit-logs &#61; &#123;&#10;    filter &#61; &#34;logName:&#92;&#34;&#47;logs&#47;cloudaudit.googleapis.com&#37;2Factivity&#92;&#34; OR logName:&#92;&#34;&#47;logs&#47;cloudaudit.googleapis.com&#37;2Fsystem_event&#92;&#34;&#34;&#10;    type   &#61; &#34;bigquery&#34;&#10;  &#125;&#10;  vpc-sc &#61; &#123;&#10;    filter &#61; &#34;protoPayload.metadata.&#64;type&#61;&#92;&#34;type.googleapis.com&#47;google.cloud.audit.VpcServiceControlAuditMetadata&#92;&#34;&#34;&#10;    type   &#61; &#34;bigquery&#34;&#10;  &#125;&#10;&#125;">&#123;&#8230;&#125;</code> |  |
-| [outputs_location](variables.tf#L211) | Enable writing provider, tfvars and CI/CD workflow files to local filesystem. Leave null to disable. | <code>string</code> |  | <code>null</code> |  |
-| [project_parent_ids](variables.tf#L227) | Optional parents for projects created here in folders/nnnnnnn format. Null values will use the organization as parent. | <code title="object&#40;&#123;&#10;  automation &#61; string&#10;  billing    &#61; string&#10;  logging    &#61; string&#10;&#125;&#41;">object&#40;&#123;&#8230;&#125;&#41;</code> |  | <code title="&#123;&#10;  automation &#61; null&#10;  billing    &#61; null&#10;  logging    &#61; null&#10;&#125;">&#123;&#8230;&#125;</code> |  |
-
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| <a name="input_billing_account"></a> [billing\_account](#input\_billing\_account) | Billing account id and organization id ('nnnnnnnn' or null). | <pre>object({<br>    id              = string<br>    organization_id = number<br>  })</pre> | n/a | yes |
+| <a name="input_organization"></a> [organization](#input\_organization) | Organization details. | <pre>object({<br>    domain      = string<br>    id          = number<br>    customer_id = string<br>  })</pre> | n/a | yes |
+| <a name="input_prefix"></a> [prefix](#input\_prefix) | Prefix used for resources that need unique names. Use 9 characters or less. | `string` | n/a | yes |
+| <a name="input_bootstrap_user"></a> [bootstrap\_user](#input\_bootstrap\_user) | Email of the nominal user running this stage for the first time. | `string` | `null` | no |
+| <a name="input_cicd_repositories"></a> [cicd\_repositories](#input\_cicd\_repositories) | CI/CD repository configuration. Identity providers reference keys in the `federated_identity_providers` variable. Set to null to disable, or set individual repositories to null if not needed. | <pre>object({<br>    bootstrap = object({<br>      branch            = string<br>      identity_provider = string<br>      name              = string<br>      type              = string<br>    })<br>    cicd = object({<br>      branch            = string<br>      identity_provider = string<br>      name              = string<br>      type              = string<br>    })<br>    resman = object({<br>      branch            = string<br>      identity_provider = string<br>      name              = string<br>      type              = string<br>    })<br>  })</pre> | `null` | no |
+| <a name="input_custom_role_names"></a> [custom\_role\_names](#input\_custom\_role\_names) | Names of custom roles defined at the org level. | <pre>object({<br>    organization_iam_admin        = string<br>    service_project_network_admin = string<br>  })</pre> | <pre>{<br>  "organization_iam_admin": "organizationIamAdmin",<br>  "service_project_network_admin": "serviceProjectNetworkAdmin"<br>}</pre> | no |
+| <a name="input_fast_features"></a> [fast\_features](#input\_fast\_features) | Selective control for top-level FAST features. | <pre>object({<br>    data_platform   = bool<br>    gke             = bool<br>    project_factory = bool<br>    sandbox         = bool<br>    teams           = bool<br>  })</pre> | <pre>{<br>  "data_platform": true,<br>  "gke": true,<br>  "project_factory": true,<br>  "sandbox": true,<br>  "teams": true<br>}</pre> | no |
+| <a name="input_federated_identity_providers"></a> [federated\_identity\_providers](#input\_federated\_identity\_providers) | Workload Identity Federation pools. The `cicd_repositories` variable references keys here. | <pre>map(object({<br>    attribute_condition = string<br>    issuer              = string<br>    custom_settings = object({<br>      issuer_uri        = string<br>      allowed_audiences = list(string)<br>    })<br>  }))</pre> | `{}` | no |
+| <a name="input_groups"></a> [groups](#input\_groups) | Group names to grant organization-level permissions. | `map(string)` | <pre>{<br>  "gcp-billing-admins": "gcp-billing-admins",<br>  "gcp-devops": "gcp-devops",<br>  "gcp-network-admins": "gcp-network-admins",<br>  "gcp-organization-admins": "gcp-organization-admins",<br>  "gcp-security-admins": "gcp-security-admins",<br>  "gcp-support": "gcp-devops"<br>}</pre> | no |
+| <a name="input_iam"></a> [iam](#input\_iam) | Organization-level custom IAM settings in role => [principal] format. | `map(list(string))` | `{}` | no |
+| <a name="input_iam_additive"></a> [iam\_additive](#input\_iam\_additive) | Organization-level custom IAM settings in role => [principal] format for non-authoritative bindings. | `map(list(string))` | `{}` | no |
+| <a name="input_locations"></a> [locations](#input\_locations) | Optional locations for GCS, BigQuery, and logging buckets created here. | <pre>object({<br>    bq      = string<br>    gcs     = string<br>    logging = string<br>    pubsub  = list(string)<br>  })</pre> | <pre>{<br>  "bq": "EU",<br>  "gcs": "EU",<br>  "logging": "global",<br>  "pubsub": []<br>}</pre> | no |
+| <a name="input_log_sinks"></a> [log\_sinks](#input\_log\_sinks) | Org-level log sinks, in name => {type, filter} format. | <pre>map(object({<br>    filter = string<br>    type   = string<br>  }))</pre> | <pre>{<br>  "audit-logs": {<br>    "filter": "logName:\"/logs/cloudaudit.googleapis.com%2Factivity\" OR logName:\"/logs/cloudaudit.googleapis.com%2Fsystem_event\"",<br>    "type": "bigquery"<br>  },<br>  "vpc-sc": {<br>    "filter": "protoPayload.metadata.@type=\"type.googleapis.com/google.cloud.audit.VpcServiceControlAuditMetadata\"",<br>    "type": "bigquery"<br>  }<br>}</pre> | no |
+| <a name="input_outputs_location"></a> [outputs\_location](#input\_outputs\_location) | Enable writing provider, tfvars and CI/CD workflow files to local filesystem. Leave null to disable. | `string` | `null` | no |
+| <a name="input_project_parent_ids"></a> [project\_parent\_ids](#input\_project\_parent\_ids) | Optional parents for projects created here in folders/nnnnnnn format. Null values will use the organization as parent. | <pre>object({<br>    automation = string<br>    billing    = string<br>    logging    = string<br>  })</pre> | <pre>{<br>  "automation": null,<br>  "billing": null,<br>  "logging": null<br>}</pre> | no |
 ## Outputs
 
-| name | description | sensitive | consumers |
-|---|---|:---:|---|
-| [automation](outputs.tf#L89) | Automation resources. |  |  |
-| [billing_dataset](outputs.tf#L94) | BigQuery dataset prepared for billing export. |  |  |
-| [cicd_repositories](outputs.tf#L99) | CI/CD repository configurations. |  |  |
-| [custom_roles](outputs.tf#L111) | Organization-level custom roles. |  |  |
-| [federated_identity](outputs.tf#L116) | Workload Identity Federation pool and providers. |  |  |
-| [outputs_bucket](outputs.tf#L126) | GCS bucket where generated output files are stored. |  |  |
-| [project_ids](outputs.tf#L131) | Projects created by this stage. |  |  |
-| [providers](outputs.tf#L141) | Terraform provider files for this stage and dependent stages. | ✓ | <code>stage-01</code> |
-| [service_accounts](outputs.tf#L148) | Automation service accounts created by this stage. |  |  |
-| [tfvars](outputs.tf#L158) | Terraform variable files for the following stages. | ✓ |  |
+| Name | Description |
+|------|-------------|
+| <a name="output_automation"></a> [automation](#output\_automation) | Automation resources. |
+| <a name="output_billing_dataset"></a> [billing\_dataset](#output\_billing\_dataset) | BigQuery dataset prepared for billing export. |
+| <a name="output_cicd_repositories"></a> [cicd\_repositories](#output\_cicd\_repositories) | CI/CD repository configurations. |
+| <a name="output_custom_roles"></a> [custom\_roles](#output\_custom\_roles) | Organization-level custom roles. |
+| <a name="output_federated_identity"></a> [federated\_identity](#output\_federated\_identity) | Workload Identity Federation pool and providers. |
+| <a name="output_outputs_bucket"></a> [outputs\_bucket](#output\_outputs\_bucket) | GCS bucket where generated output files are stored. |
+| <a name="output_project_ids"></a> [project\_ids](#output\_project\_ids) | Projects created by this stage. |
+| <a name="output_providers"></a> [providers](#output\_providers) | Terraform provider files for this stage and dependent stages. |
+| <a name="output_service_accounts"></a> [service\_accounts](#output\_service\_accounts) | Automation service accounts created by this stage. |
+| <a name="output_tfvars"></a> [tfvars](#output\_tfvars) | Terraform variable files for the following stages. |
 
-<!-- END TFDOC -->
+## Resource types
+
+| Type | Used |
+|------|-------|
+| [google-beta_google_iam_workload_identity_pool](https://registry.terraform.io/providers/hashicorp/google-beta/latest/docs/resources/google_iam_workload_identity_pool) | 1 |
+| [google-beta_google_iam_workload_identity_pool_provider](https://registry.terraform.io/providers/hashicorp/google-beta/latest/docs/resources/google_iam_workload_identity_pool_provider) | 1 |
+| [google_billing_account_iam_member](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/billing_account_iam_member) | 2 |
+| [google_organization_iam_binding](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/organization_iam_binding) | 2 |
+| [google_storage_bucket_object](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_object) | 4 |
+| [local_file](https://registry.terraform.io/providers/hashicorp/local/latest/docs/resources/file) | 4 |
+
+**`Used` only includes resource blocks.** `for_each` and `count` meta arguments, as well as resource blocks of modules are not considered.
+
+## Modules
+
+| Name | Source | Version |
+|------|--------|---------|
+| <a name="module_automation-project"></a> [automation-project](#module\_automation-project) | qbeyond/project/google | 0.1.0 |
+| <a name="module_automation-tf-bootstrap-gcs"></a> [automation-tf-bootstrap-gcs](#module\_automation-tf-bootstrap-gcs) | qbeyond/storage-bucket/google | 0.1.0 |
+| <a name="module_automation-tf-bootstrap-sa"></a> [automation-tf-bootstrap-sa](#module\_automation-tf-bootstrap-sa) | qbeyond/service-account/google | 0.1.0 |
+| <a name="module_automation-tf-cicd-gcs"></a> [automation-tf-cicd-gcs](#module\_automation-tf-cicd-gcs) | qbeyond/storage-bucket/google | 0.1.0 |
+| <a name="module_automation-tf-cicd-provisioning-sa"></a> [automation-tf-cicd-provisioning-sa](#module\_automation-tf-cicd-provisioning-sa) | qbeyond/service-account/google | 0.1.0 |
+| <a name="module_automation-tf-cicd-repo"></a> [automation-tf-cicd-repo](#module\_automation-tf-cicd-repo) | qbeyond/source-repository/google | 0.1.0 |
+| <a name="module_automation-tf-cicd-sa"></a> [automation-tf-cicd-sa](#module\_automation-tf-cicd-sa) | qbeyond/service-account/google | 0.1.0 |
+| <a name="module_automation-tf-output-gcs"></a> [automation-tf-output-gcs](#module\_automation-tf-output-gcs) | qbeyond/storage-bucket/google | 0.1.0 |
+| <a name="module_automation-tf-resman-gcs"></a> [automation-tf-resman-gcs](#module\_automation-tf-resman-gcs) | qbeyond/storage-bucket/google | 0.1.0 |
+| <a name="module_automation-tf-resman-sa"></a> [automation-tf-resman-sa](#module\_automation-tf-resman-sa) | qbeyond/service-account/google | 0.1.0 |
+| <a name="module_billing-export-dataset"></a> [billing-export-dataset](#module\_billing-export-dataset) | ./modules/bigquery-dataset | n/a |
+| <a name="module_billing-export-project"></a> [billing-export-project](#module\_billing-export-project) | qbeyond/project/google | 0.1.0 |
+| <a name="module_billing-organization-ext"></a> [billing-organization-ext](#module\_billing-organization-ext) | qbeyond/organization-configuration/google | 0.1.0 |
+| <a name="module_bootstrap_template"></a> [bootstrap\_template](#module\_bootstrap\_template) | qbeyond/landing-zone/google//modules/provider-template | 0.1.0 |
+| <a name="module_cicd_template"></a> [cicd\_template](#module\_cicd\_template) | qbeyond/landing-zone/google//modules/provider-template | 0.1.0 |
+| <a name="module_log-export-dataset"></a> [log-export-dataset](#module\_log-export-dataset) | ./modules/bigquery-dataset | n/a |
+| <a name="module_log-export-gcs"></a> [log-export-gcs](#module\_log-export-gcs) | qbeyond/storage-bucket/google | 0.1.0 |
+| <a name="module_log-export-logbucket"></a> [log-export-logbucket](#module\_log-export-logbucket) | ./modules/logging-bucket | n/a |
+| <a name="module_log-export-project"></a> [log-export-project](#module\_log-export-project) | qbeyond/project/google | 0.1.0 |
+| <a name="module_log-export-pubsub"></a> [log-export-pubsub](#module\_log-export-pubsub) | ./modules/pubsub | n/a |
+| <a name="module_organization"></a> [organization](#module\_organization) | qbeyond/organization-configuration/google | 0.1.0 |
+| <a name="module_resman_template"></a> [resman\_template](#module\_resman\_template) | qbeyond/landing-zone/google//modules/provider-template | 0.1.0 |
+
+## Resources by Files
+
+### billing.tf
+
+| Name | Type |
+|------|------|
+| [google_billing_account_iam_member.billing_ext_admin](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/billing_account_iam_member) | resource |
+| [google_billing_account_iam_member.billing_ext_cost_manager](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/billing_account_iam_member) | resource |
+| [google_organization_iam_binding.billing_org_ext_admin_delegated](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/organization_iam_binding) | resource |
+
+### identity-providers.tf
+
+| Name | Type |
+|------|------|
+| [google-beta_google_iam_workload_identity_pool.default](https://registry.terraform.io/providers/hashicorp/google-beta/latest/docs/resources/google_iam_workload_identity_pool) | resource |
+| [google-beta_google_iam_workload_identity_pool_provider.default](https://registry.terraform.io/providers/hashicorp/google-beta/latest/docs/resources/google_iam_workload_identity_pool_provider) | resource |
+
+### organization.tf
+
+| Name | Type |
+|------|------|
+| [google_organization_iam_binding.org_admin_delegated](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/organization_iam_binding) | resource |
+
+### outputs-files.tf
+
+| Name | Type |
+|------|------|
+| [local_file.providers](https://registry.terraform.io/providers/hashicorp/local/latest/docs/resources/file) | resource |
+| [local_file.tfvars](https://registry.terraform.io/providers/hashicorp/local/latest/docs/resources/file) | resource |
+| [local_file.tfvars_globals](https://registry.terraform.io/providers/hashicorp/local/latest/docs/resources/file) | resource |
+| [local_file.workflows](https://registry.terraform.io/providers/hashicorp/local/latest/docs/resources/file) | resource |
+
+### outputs-gcs.tf
+
+| Name | Type |
+|------|------|
+| [google_storage_bucket_object.providers](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_object) | resource |
+| [google_storage_bucket_object.tfvars](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_object) | resource |
+| [google_storage_bucket_object.tfvars_globals](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_object) | resource |
+| [google_storage_bucket_object.workflows](https://registry.terraform.io/providers/hashicorp/google/latest/docs/resources/storage_bucket_object) | resource |
+<!-- END_TF_DOCS -->
+
+## Destruction
+
+If you want to destroy a previous FAST deployment in your organization, you need to destroy in reverse order. So to destroy this module, you need to destroy all subsequent stages before.
+
+**Warning: you should follow these steps carefully as we will modify our own permissions. Ensure you can grant yourself the Organization Admin role again. Otherwise, you will not be able to finish the destruction process and will, most likely, get locked out of your organization.**
+
+We manually remove several resources (GCS buckets and BQ datasets). Note that `terrafom destroy` will fail. This is expected; just continue with the rest of the steps.
+
+```powershell
+cd $FAST_PWD/00-bootstrap/
+
+# remove provider config to execute without SA impersonation
+rm 00-bootstrap-providers.tf
+
+#override project to use cloud identity api
+Set-Content -LiteralPath "00-bootstrap-providers-destroy.tf" -Value @(
+  'provider "google" {'
+  'billing_project = "<iacproject>"'
+  'user_project_override = true'
+  '}'
+)
+
+# migrate to local state
+terraform init -migrate-state
+
+# remove GCS buckets
+terraform state list | Select-String "google_storage_bucket\." | Foreach-Object {$_ = $_ -replace '"','\"'; & terraform state rm $_}
+
+#remove bigqueries
+terraform state list | Select-String "google_bigquery_dataset" | Foreach-Object {$_ = $_ -replace '"','\"'; & terraform state rm $_}
+
+terraform destroy
+```
+
+When the destroy fails, continue with the steps below. Again, make sure your user (the one you are using to execute this step) has the Organization Administrator role, as we will remove the permissions for the organization-admins group
+
+```powershell
+# Add the Organization Admin role to $BU_USER in the GCP Console
+# then execute the command below to grant yourself the permissions needed 
+# to finish the destruction
+$FAST_DESTROY_ROLES=@(
+  "roles/billing.admin",
+  "roles/logging.admin",
+  "roles/iam.organizationRoleAdmin",
+  "roles/resourcemanager.projectDeleter",
+  "roles/resourcemanager.folderAdmin",
+  "roles/owner"
+)
+
+# login to gcloud
+gcloud auth login
+
+$FAST_BU=gcloud config list --format 'value(core.account)'
+
+# find your org id
+gcloud organizations list --filter display_name:[part of your domain]
+
+# set your org id
+$FAST_ORG_ID="<orgid>"
+
+foreach ($role in $FAST_DESTROY_ROLES) {
+gcloud organizations add-iam-policy-binding $FAST_ORG_ID --member user:$FAST_BU --role $role
+}
+
+terraform destroy
+rm -i terraform.tfstate*
+```
+
+In case you want to deploy FAST stages again, the make sure to:
+* Modify the [prefix](00-bootstrap/variables.tf) variable to allow the deployment of resources that need unique names (eg, projects).
+* Modify the [custom_roles](00-bootstrap/variables.tf) variable to allow recently deleted custom roles to be created again.
